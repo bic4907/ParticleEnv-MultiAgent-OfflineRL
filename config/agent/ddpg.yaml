@@ -1,0 +1,6 @@
+name: rule
+_target_: model.MathDriver.MathDriver
+params:
+  obs_dim: ??? # to be specified later
+  action_dim: ??? # to be specified later
+  action_range: ??? # to be specified later
