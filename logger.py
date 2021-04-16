@@ -1,6 +1,5 @@
 from torch.utils.tensorboard import SummaryWriter
 from collections import defaultdict
-import json
 import os
 import csv
 import shutil
@@ -23,15 +22,9 @@ COMMON_EVAL_FORMAT = [
 
 
 AGENT_TRAIN_FORMAT = {
-    'rule': [],
-    'manual': [],
-    'sac': [
+    'maddpg': [
         ('batch_reward', 'BR', 'float'),
-        ('actor_loss', 'ALOSS', 'float'),
-        ('critic_loss', 'CLOSS', 'float'),
-        ('alpha_loss', 'TLOSS', 'float'),
-        ('alpha_value', 'TVAL', 'float'),
-        ('actor_entropy', 'AENT', 'float')
+
     ]
 
 }

@@ -1,5 +1,6 @@
 import numpy as np
 
+
 # physical/external base state of all entites
 class EntityState(object):
     def __init__(self):
@@ -8,12 +9,14 @@ class EntityState(object):
         # physical velocity
         self.p_vel = None
 
+
 # state of agents (including communication and internal/mental state)
 class AgentState(EntityState):
     def __init__(self):
         super(AgentState, self).__init__()
         # communication utterance
         self.c = None
+
 
 # action of the agent
 class Action(object):
@@ -22,6 +25,7 @@ class Action(object):
         self.u = None
         # communication action
         self.c = None
+
 
 # properties and state of physical world entity
 class Entity(object):
@@ -121,6 +125,7 @@ class World(object):
         # gather forces applied to entities
         p_force = [None] * len(self.entities)
         # apply agent physical controls
+
         p_force = self.apply_action_force(p_force)
         # apply environment forces
         p_force = self.apply_environment_force(p_force)
@@ -156,11 +161,13 @@ class World(object):
 
     # integrate physical state
     def integrate_state(self, p_force):
-        for i,entity in enumerate(self.entities):
+
+        for i, entity in enumerate(self.entities):
             if not entity.movable: continue
             entity.state.p_vel = entity.state.p_vel * (1 - self.damping)
-            if (p_force[i] is not None):
-                entity.state.p_vel += (p_force[i] / entity.mass) * self.dt
+
+            if p_force[i] is not None:
+                entity.state.p_vel += (p_force[i][0] / entity.mass) * self.dt
             if entity.max_speed is not None:
                 speed = np.sqrt(np.square(entity.state.p_vel[0]) + np.square(entity.state.p_vel[1]))
                 if speed > entity.max_speed:

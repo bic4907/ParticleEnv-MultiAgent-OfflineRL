@@ -3,6 +3,8 @@
 """
 from __future__ import division
 import os
+
+import cv2
 import six
 import sys
 
@@ -51,6 +53,7 @@ class Viewer(object):
 
         self.window = pyglet.window.Window(width=width, height=height, display=display)
         self.window.on_close = self.window_closed_by_user
+        self.window.set_visible(False)
         self.geoms = []
         self.onetime_geoms = []
         self.transform = Transform()
@@ -83,8 +86,9 @@ class Viewer(object):
     def add_onetime(self, geom):
         self.onetime_geoms.append(geom)
 
-    def render(self, return_rgb_array=False):
+    def render(self, mode='human'):
         glClearColor(1,1,1,1)
+
         self.window.clear()
         self.window.switch_to()
         self.window.dispatch_events()
@@ -95,19 +99,19 @@ class Viewer(object):
             geom.render()
         self.transform.disable()
         arr = None
-        if return_rgb_array:
+        if not mode == 'human':
             buffer = pyglet.image.get_buffer_manager().get_color_buffer()
+
             image_data = buffer.get_image_data()
-            arr = np.fromstring(image_data.data, dtype=np.uint8, sep='')
-            # In https://github.com/openai/gym-http-api/issues/2, we
-            # discovered that someone using Xmonad on Arch was having
-            # a window of size 598 x 398, though a 600 x 400 window
-            # was requested. (Guess Xmonad was preserving a pixel for
-            # the boundary.) So we use the buffer height/width rather
-            # than the requested one.
+
+            arr = np.fromstring(image_data.get_data(), dtype=np.uint8, sep='')
+
             arr = arr.reshape(buffer.height, buffer.width, 4)
             arr = arr[::-1,:,0:3]
+            arr = cv2.cvtColor(arr, cv2.COLOR_RGB2BGR)
+
         self.window.flip()
+
         self.onetime_geoms = []
         return arr
 

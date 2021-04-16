@@ -4,7 +4,7 @@ from utils.misc import soft_update
 from model.DDPGAgent import DDPGAgent
 
 
-class MADDPG(object):
+class DDPG(object):
 
     def __init__(self, name, params):
 

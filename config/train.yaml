@@ -2,17 +2,19 @@ defaults:
     - agent: maddpg
 
 # Experiment Settings
-env: particle
+env: simple
 
 experiment: vanilla
 seed: 0
-num_seed_steps: 0 # 5000
+num_seed_steps: 100 # 5000
 
 num_train_steps: 1e6
 replay_buffer_capacity: ${num_train_steps}
 
 eval_frequency: 10000
 num_eval_episodes: 10
+
+common_reward: true
 
 # Cuda Settings
 device: cuda
