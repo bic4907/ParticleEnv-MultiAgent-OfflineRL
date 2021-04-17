@@ -1,10 +1,11 @@
+import cv2
 import imageio
 import os
 
 from utils.train import make_dir
 
 class VideoRecorder(object):
-    def __init__(self, root_dir, height=608, width=800, camera_id=0, fps=30):
+    def __init__(self, root_dir, height=304, width=304, camera_id=0, fps=30):
         self.save_dir = make_dir(root_dir, 'video') if root_dir else None
         self.height = height
         self.width = width
@@ -18,11 +19,8 @@ class VideoRecorder(object):
 
     def record(self, env):
         if self.enabled:
-            frame = env.render(
-                                mode='rgb_array',
-                                height=self.height,
-                                width=self.width
-                               )
+            frame = env.render(mode='rgb_array')
+            frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
             self.frames.append(frame)
 
     def save(self, file_name):

@@ -7,12 +7,13 @@ import random
 
 
 class eval_mode(object):
-    def __init__(self, *models):
+    def __init__(self, models):
         self.models = models
 
     def __enter__(self):
         if not hasattr(self, 'models'): return
         self.prev_states = []
+
         for model in self.models:
             self.prev_states.append(model.training)
             model.train(False)
@@ -25,11 +26,12 @@ class eval_mode(object):
 
 
 class train_mode(object):
-    def __init__(self, *models):
+    def __init__(self, models):
         self.models = models
 
     def __enter__(self):
         self.prev_states = []
+
         for model in self.models:
             self.prev_states.append(model.training)
             model.train(True)

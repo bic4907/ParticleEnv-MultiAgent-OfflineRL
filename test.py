@@ -13,7 +13,10 @@ while True:
 
         actions = []
         for _ in range(1):
-            actions.append(np.random.uniform(-1, 1, 2))
+            ver = float(input())
+            hor = float(input())
+            actions.append([ver ,hor])
+            # actions.append(np.random.uniform(-1, 1, 2))
 
         next_state, reward, done, _ = env.step(actions)
         print(next_state, reward, done, )

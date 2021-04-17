@@ -32,6 +32,7 @@ class Scenario(BaseScenario):
         # random properties for agents
         for i, agent in enumerate(world.agents):
             agent.color = np.array([0.35, 0.35, 0.85])
+            agent.prev_distance = None
         # random properties for landmarks
         for i, landmark in enumerate(world.landmarks):
             landmark.color = np.array([0.25, 0.25, 0.25])
@@ -60,8 +61,7 @@ class Scenario(BaseScenario):
                 if self.is_collision(a, agent):
                     rew -= 1
                     collisions += 1
-        return (rew, collisions, min_dists, occupied_landmarks)
-
+        return rew, collisions, min_dists, occupied_landmarks
 
     def is_collision(self, agent1, agent2):
         delta_pos = agent1.state.p_pos - agent2.state.p_pos
@@ -71,15 +71,33 @@ class Scenario(BaseScenario):
 
     def reward(self, agent, world):
         # Agents are rewarded based on minimum agent distance to each landmark, penalized for collisions
-        rew = 0
+
+        # Get min distance
         for l in world.landmarks:
             dists = [np.sqrt(np.sum(np.square(a.state.p_pos - l.state.p_pos))) for a in world.agents]
-            rew -= min(dists)
+        dist = min(dists)
+
+        distance_reward = 0
+        if hasattr(agent, 'prev_distance') and agent.prev_distance is not None:
+            gap = agent.prev_distance - dist
+            distance_reward = gap * 10
+
+        agent.prev_distance = dist
+
+        collision_reward = 0
         if agent.collide:
             for a in world.agents:
                 if self.is_collision(a, agent):
-                    rew -= 1
-        return rew
+                    collision_reward -= 0.1
+
+        goal_reward = 0
+        if dist < 0.055:
+            goal_reward += 1
+
+
+        reward = distance_reward + collision_reward + goal_reward + (-0.01)
+
+        return reward
 
     def observation(self, agent, world):
         # get positions of all entities in this agent's reference frame

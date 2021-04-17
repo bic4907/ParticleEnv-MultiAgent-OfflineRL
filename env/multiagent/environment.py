@@ -13,7 +13,7 @@ class MultiAgentEnv(gym.Env):
 
     def __init__(self, world, reset_callback=None, reward_callback=None,
                  observation_callback=None, info_callback=None,
-                 done_callback=None, shared_viewer=True, episode_length=100):
+                 done_callback=None, shared_viewer=True, episode_length=200):
 
         self.episode_length = episode_length
         self.world = world
@@ -114,7 +114,7 @@ class MultiAgentEnv(gym.Env):
         self.agents = self.world.policy_agents
         for agent in self.agents:
             obs_n.append(self._get_obs(agent))
-        return obs_n
+        return np.array(obs_n)
 
     # get info used for benchmarking
     def _get_info(self, agent):
@@ -178,7 +178,7 @@ class MultiAgentEnv(gym.Env):
                 else:
                     agent.action.u = action[:2]
 
-            sensitivity = 1.0
+            sensitivity = 5.0
             if agent.accel is not None:
                 sensitivity = agent.accel
             agent.action.u = np.array(agent.action.u) * sensitivity
@@ -223,7 +223,7 @@ class MultiAgentEnv(gym.Env):
                 # import rendering only if we need it (and don't import for headless machines)
                 # from gym.envs.classic_control import rendering
                 from env.multiagent import rendering
-                self.viewers[i] = rendering.Viewer(300, 300)
+                self.viewers[i] = rendering.Viewer(304, 304)
 
         # create rendering geometry
         if self.render_geoms is None:
@@ -324,7 +324,7 @@ class BatchMultiAgentEnv(gym.Env):
             # reward = [r / len(self.env_batch) for r in reward]
             reward_n += reward
             done_n += done
-        return obs_n, reward_n, done_n, info_n
+        return np.array(obs_n), np.array(reward_n), np.array(done_n), info_n
 
     def reset(self):
         obs_n = []

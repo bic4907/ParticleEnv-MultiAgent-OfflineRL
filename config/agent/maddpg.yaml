@@ -4,10 +4,13 @@ params:
   obs_dim: ??? # to be specified later
   action_dim: ??? # to be specified later
   action_range: ??? # to be specified later
-  agent_types: ??? # Different by environments
+  agent_index: ??? # Different by environments
   hidden_dim: 200
   device: ${device}
   batch_size: 1024
   lr: 0.001
   tau: 1
   gamma: 0.95
+
+  critic:
+    input_dim: ???

@@ -28,19 +28,19 @@ class DDPGAgent(nn.Module):
 
         self.obs_dim = params.obs_dim
         self.action_dim = params.action_dim
-        self.agent_types = params.agent_types
         self.device = params.device
+        self.hidden_dim = params.hidden_dim
 
         self.policy = MLPNetwork(self.obs_dim, self.action_dim,
                                  hidden_dim=self.hidden_dim,
                                  constrain_out=True)
-        self.critic = MLPNetwork(self.obs_dim, 1,
+        self.critic = MLPNetwork(params.critic.obs_dim, 1,
                                  hidden_dim=self.hidden_dim,
                                  constrain_out=False)
         self.target_policy = MLPNetwork(self.obs_dim, self.action_dim,
                                         hidden_dim=self.hidden_dim,
                                         constrain_out=True)
-        self.target_critic = MLPNetwork(self.obs_dim, 1,
+        self.target_critic = MLPNetwork(params.critic.obs_dim, 1,
                                         hidden_dim=self.hidden_dim,
                                         constrain_out=False)
 
@@ -75,7 +75,7 @@ class DDPGAgent(nn.Module):
         if explore:
             action += Tensor(self.exploration.noise()).to(self.device)
             action = action.clamp(-1, 1)
-        return action
+        return action.detach().cpu().numpy()
 
     def get_params(self):
         return {'policy': self.policy.state_dict(),

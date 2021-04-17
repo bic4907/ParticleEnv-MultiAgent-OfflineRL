@@ -42,10 +42,7 @@ class MLPNetwork(nn.Module):
         Outputs:
             out (PyTorch Matrix): Output of network (actions, values, etc)
         """
-
-        if X.shape[0] != 1:
-            X = self.in_fn(X)
-
+        X = self.in_fn(X)
         h1 = self.activation(self.fc1(X))
         h2 = self.activation(self.fc2(h1))
         out = self.out_fn(self.fc3(h2))

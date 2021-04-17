@@ -6,7 +6,7 @@ env: simple
 
 experiment: vanilla
 seed: 0
-num_seed_steps: 100 # 5000
+num_seed_steps: 5000 # 5000
 
 num_train_steps: 1e6
 replay_buffer_capacity: ${num_train_steps}

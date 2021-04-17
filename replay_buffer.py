@@ -12,8 +12,7 @@ class ReplayBuffer(object):
         self.next_obses = np.empty((capacity, *obs_shape), dtype=np.float32)
         self.actions = np.empty((capacity, *action_shape), dtype=np.float32)
         self.rewards = np.empty((capacity, *reward_shape), dtype=np.float32)
-        self.not_dones = np.empty((capacity, 1), dtype=np.float32)
-        self.not_dones_no_max = np.empty((capacity, 1), dtype=np.float32)
+        self.dones = np.empty((capacity, 1), dtype=np.float32)
 
         self.idx = 0
         self.last_save = 0
@@ -28,18 +27,25 @@ class ReplayBuffer(object):
         np.copyto(self.actions[self.idx], action)
         np.copyto(self.rewards[self.idx], reward)
         np.copyto(self.next_obses[self.idx], next_obs)
-        np.copyto(self.not_dones[self.idx], not done)
+        np.copyto(self.dones[self.idx], done)
 
         self.idx = (self.idx + 1) % self.capacity
         self.full = self.full or self.idx == 0
 
-    def sample(self, batch_size):
+    def sample(self, batch_size, nth=None):
         idxs = np.random.randint(0, self.capacity if self.full else self.idx, size=batch_size)
 
-        obses = torch.as_tensor(self.obses[idxs], device=self.device).float()
-        actions = torch.as_tensor(self.actions[idxs], device=self.device)
-        rewards = torch.as_tensor(self.rewards[idxs], device=self.device)
-        next_obses = torch.as_tensor(self.next_obses[idxs], device=self.device).float()
-        not_dones = torch.as_tensor(self.not_dones[idxs], device=self.device)
+        if nth:
+            obses = torch.FloatTensor(self.obses[idxs][:, nth]).to(self.device)
+            actions = torch.FloatTensor(self.actions[idxs][:, nth]).to(self.device)
+            rewards = torch.FloatTensor(self.rewards[idxs][:, nth]).to(self.device)
+            next_obses = torch.FloatTensor(self.next_obses[idxs][:, nth]).to(self.device)
+            dones = torch.FloatTensor(self.dones[idxs]).to(self.device)
+        else:
+            obses = torch.FloatTensor(self.obses[idxs]).to(self.device)
+            actions = torch.FloatTensor(self.actions[idxs]).to(self.device)
+            rewards = torch.FloatTensor(self.rewards[idxs]).to(self.device)
+            next_obses = torch.FloatTensor(self.next_obses[idxs]).to(self.device)
+            dones = torch.FloatTensor(self.dones[idxs]).to(self.device)
 
-        return obses, actions, rewards, next_obses, not_dones
+        return obses, actions, rewards, next_obses, dones

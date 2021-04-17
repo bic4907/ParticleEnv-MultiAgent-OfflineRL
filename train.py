@@ -1,17 +1,20 @@
 import os
 import time
 
-import cv2
 import torch
-import random
 import numpy as np
 
 from recoder import VideoRecorder
 from logger import Logger
 from replay_buffer import ReplayBuffer
-from utils.train import eval_mode, set_seed_everywhere
+from utils.train import set_seed_everywhere
 from utils.environment import get_agent_types
 from utils.make_env import make_env
+
+from env.make_env import make_env
+from env.wrapper import NormalizedEnv
+
+from utils.agent import find_index
 
 import hydra
 from omegaconf import DictConfig
@@ -31,10 +34,12 @@ class Workspace(object):
 
         set_seed_everywhere(cfg.seed)
         self.device = torch.device(cfg.device)
-        self.env = make_env(cfg.env)
+        self.env = NormalizedEnv(make_env(cfg.env))
         self.env.reset()
 
-        self.agent_types = get_agent_types(self.env)
+        self.env_agent_types = get_agent_types(self.env)
+        self.agent_indexes = find_index(self.env_agent_types, 'ally')
+        self.adversary_indexes = find_index(self.env_agent_types, 'adversary')
 
         cfg.agent.params.obs_dim = self.env.observation_space[0].shape[0]
         cfg.agent.params.action_dim = self.env.action_space[0].shape[0]
@@ -42,14 +47,15 @@ class Workspace(object):
             float(self.env.action_space[0].low.min()),
             float(self.env.action_space[0].high.max())
         ]
-        cfg.agent.params.agent_types = self.agent_types
+        cfg.agent.params.agent_index = self.agent_indexes
+        cfg.agent.params.critic.input_dim = cfg.agent.params.obs_dim + cfg.agent.params.action_dim
 
         self.agent = hydra.utils.instantiate(cfg.agent)
 
         self.common_reward = cfg.common_reward
-        obs_shape = [len(self.agent_types), cfg.agent.params.obs_dim]
-        action_shape = [len(self.agent_types), cfg.agent.params.action_dim]
-        reward_shape = [len(self.agent_types), 1]
+        obs_shape = [len(self.env_agent_types), cfg.agent.params.obs_dim]
+        action_shape = [len(self.env_agent_types), cfg.agent.params.action_dim]
+        reward_shape = [len(self.env_agent_types), 1]
         self.replay_buffer = ReplayBuffer(obs_shape=obs_shape,
                                           action_shape=action_shape,
                                           reward_shape=reward_shape,
@@ -63,16 +69,24 @@ class Workspace(object):
         average_episode_reward = 0
         for episode in range(self.cfg.num_eval_episodes):
             obs = self.env.reset()
+            episode_step = 0
 
             self.video_recorder.init(enabled=(episode == 0))
             done = False
             episode_reward = 0
             while not done:
-                with eval_mode(self.agent):
-                    action = self.agent.act(obs, sample=False)
-                obs, reward, done, _ = self.env.step(action)
+                action = self.agent.act(obs, sample=False)
+
+                _, rewards, dones, _ = self.env.step(action)
+
+                done = True in dones
+                if episode_step == self.env.episode_length:
+                    done = True
+
                 self.video_recorder.record(self.env)
-                episode_reward += reward
+                episode_reward += sum(rewards)
+
+                episode_step += 1
 
             average_episode_reward += episode_reward
             self.video_recorder.save(f'{self.step}.mp4')
@@ -92,7 +106,6 @@ class Workspace(object):
                     start_time = time.time()
                     self.logger.dump(self.step, save=(self.step > self.cfg.num_seed_steps))
 
-                # evaluate agent periodically
                 if self.step > 0 and self.step % self.cfg.eval_frequency == 0:
                     self.logger.log('eval/episode', episode, self.step)
                     self.evaluate()
@@ -109,12 +122,18 @@ class Workspace(object):
                 self.logger.log('train/episode', episode, self.step)
 
                 if self.step < self.cfg.num_seed_steps:
-                    action = [self.env.action_space[0].sample() for _ in self.agent_types]
-                else:
-                    with eval_mode(self.agent):
-                        action = self.agent.act(obs, sample=True)
+                    action = np.array([self.env.action_space[0].sample() for _ in self.env_agent_types])
 
-            if self.step >= self.cfg.num_seed_steps:
+                else:
+                    agent_observation = obs[self.agent_indexes]
+                    agent_actions = self.agent.act(agent_observation, sample=True)
+
+                    adversary_observation = obs[self.adversary_indexes]
+                    # adversary_actions = self.agent.act(adversary_observation, sample=True)
+                    action = agent_actions
+
+            if self.step >= self.cfg.num_seed_steps and self.step >= self.agent.batch_size:
+
                 self.agent.update(self.replay_buffer, self.logger, self.step)
 
             next_obs, rewards, dones, _ = self.env.step(action)
@@ -127,11 +146,6 @@ class Workspace(object):
                 rewards = sum(rewards)
 
             episode_reward += np.sum(rewards)
-
-            image = self.env.render()
-            cv2.imshow('image', image)
-            cv2.waitKey(1)
-            print(next_obs.shape)
 
             self.replay_buffer.add(obs, action, rewards, next_obs, done)
 
