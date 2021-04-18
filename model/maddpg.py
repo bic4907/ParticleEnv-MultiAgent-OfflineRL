@@ -63,8 +63,8 @@ class MADDPG(object):
                 target_actions = torch.Tensor([policy(next_obs).detach().cpu().numpy() for policy, next_obs in zip(self.target_policies, torch.swapaxes(next_obses, 0, 1))]).to(self.device)
                 target_actions = torch.swapaxes(target_actions, 0, 1)
                 target_critic_in = torch.cat((next_obses, target_actions), dim=2).view(self.batch_size, -1)
-
                 target_next_q = rewards[:, agent_i] + (1 - dones[:, agent_i]) * self.gamma * agent.target_critic(target_critic_in)
+
 
             critic_in = torch.cat((obses, actions), dim=2).view(self.batch_size, -1)
             main_q = agent.critic(critic_in)
@@ -79,7 +79,7 @@ class MADDPG(object):
 
             action = agent.policy(obses[:, agent_i])
 
-            joint_actions = torch.zeros((self.batch_size, self.num_agents, self.action_dim))
+            joint_actions = torch.zeros((self.batch_size, self.num_agents, self.action_dim)).to(self.device)
             for i, policy, local_obs in zip(range(self.num_agents), self.policies, torch.swapaxes(obses, 0, 1)):
                 if i == agent_i:
                     joint_actions[:, i] = action
