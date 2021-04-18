@@ -8,7 +8,7 @@ experiment: vanilla
 seed: 0
 num_seed_steps: 5000
 
-num_train_steps: 1e6
+num_train_steps: 1e5
 replay_buffer_capacity: ${num_train_steps}
 
 eval_frequency: 2000
@@ -20,7 +20,7 @@ ou_exploration_steps: 10000
 ou_init_scale: 0.3
 ou_final_scale: 0
 
-device: cpu
+device: cuda
 
 # Logging Settings
 log_frequency: 5000
