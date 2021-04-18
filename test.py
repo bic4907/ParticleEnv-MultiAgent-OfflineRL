@@ -5,24 +5,36 @@ from env.make_env import make_env
 import time
 
 env = make_env('simple')
-print(env.action_space)
-print(env.observation_space)
+
 
 while True:
+
+    key = None
     for _ in range(50):
 
         actions = []
-        for _ in range(1):
-            ver = float(input())
-            hor = float(input())
-            actions.append([ver ,hor])
-            # actions.append(np.random.uniform(-1, 1, 2))
 
+
+        if key is None and key == -1:
+            actions.append([0, 0])
+        else:
+            if key == 119:
+                actions.append([0, 0.5])
+            elif key == 115:
+                actions.append([0, -0.5])
+            elif key == 97:
+                actions.append([-0.5, 0])
+            elif key == 100:
+                actions.append([0.5, 0])
+            else:
+                actions.append([0, 0])
         next_state, reward, done, _ = env.step(actions)
-        print(next_state, reward, done, )
+        print(reward)
+        # print(next_state, reward, done, )
         image = env.render()
 
         cv2.imshow('image', image)
-        cv2.waitKey(1)
+        key = cv2.waitKey(0)
+        time.sleep(0.1)
 
     env.reset()

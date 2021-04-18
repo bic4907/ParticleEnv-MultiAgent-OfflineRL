@@ -9,7 +9,6 @@ from logger import Logger
 from replay_buffer import ReplayBuffer
 from utils.train import set_seed_everywhere
 from utils.environment import get_agent_types
-from utils.make_env import make_env
 
 from env.make_env import make_env
 from env.wrapper import NormalizedEnv
@@ -43,10 +42,8 @@ class Workspace(object):
 
         cfg.agent.params.obs_dim = self.env.observation_space[0].shape[0]
         cfg.agent.params.action_dim = self.env.action_space[0].shape[0]
-        cfg.agent.params.action_range = [
-            float(self.env.action_space[0].low.min()),
-            float(self.env.action_space[0].high.max())
-        ]
+        cfg.agent.params.action_range = [-1, 1]
+
         cfg.agent.params.agent_index = self.agent_indexes
         cfg.agent.params.critic.input_dim = cfg.agent.params.obs_dim + cfg.agent.params.action_dim
 
@@ -127,6 +124,7 @@ class Workspace(object):
                 else:
                     agent_observation = obs[self.agent_indexes]
                     agent_actions = self.agent.act(agent_observation, sample=True)
+                    print(agent_actions)
 
                     adversary_observation = obs[self.adversary_indexes]
                     # adversary_actions = self.agent.act(adversary_observation, sample=True)
@@ -145,7 +143,7 @@ class Workspace(object):
             if self.common_reward:
                 rewards = sum(rewards)
 
-            episode_reward += np.sum(rewards)
+            episode_reward += rewards
 
             self.replay_buffer.add(obs, action, rewards, next_obs, done)
 

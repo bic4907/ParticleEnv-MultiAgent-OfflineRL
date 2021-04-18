@@ -16,8 +16,7 @@ num_eval_episodes: 10
 
 common_reward: true
 
-# Cuda Settings
-device: cuda
+device: cpu
 
 # Logging Settings
 log_frequency: 10000

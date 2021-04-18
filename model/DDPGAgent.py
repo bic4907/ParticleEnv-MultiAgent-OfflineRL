@@ -4,9 +4,8 @@ from torch.optim import Adam
 import torch.nn as nn
 
 from model.network import MLPNetwork
-from model.utils.model import hard_update
+from model.utils.model import hard_update, fanin_init
 from model.utils.noise import OUNoise
-
 
 class DDPGAgent(nn.Module):
     """

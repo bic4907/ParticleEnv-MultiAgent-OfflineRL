@@ -51,14 +51,13 @@ class Scenario(BaseScenario):
         reward = -0.1
         if self._prev_distance:
             gap = self._prev_distance - dist
-            reward = gap * 10
+            reward += gap * 10
 
         self._prev_distance = dist
 
         dist = np.sqrt(np.sum(np.square(agent.state.p_pos - world.landmarks[0].state.p_pos)))
         if dist < 0.055:
             reward += 10
-
         return reward
 
     def observation(self, agent, world):

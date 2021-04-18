@@ -22,9 +22,11 @@ COMMON_EVAL_FORMAT = [
 
 
 AGENT_TRAIN_FORMAT = {
+    'ddpg': [
+        ('batch_reward', 'BR', 'float'),
+    ],
     'maddpg': [
         ('batch_reward', 'BR', 'float'),
-
     ]
 
 }

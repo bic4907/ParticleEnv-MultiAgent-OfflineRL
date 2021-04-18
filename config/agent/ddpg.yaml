@@ -1,6 +1,16 @@
-name: rule
-_target_: model.MathDriver.MathDriver
+name: ddpg
+_target_: model.ddpg.DDPG
 params:
   obs_dim: ??? # to be specified later
   action_dim: ??? # to be specified later
   action_range: ??? # to be specified later
+  agent_index: ??? # Different by environments
+  hidden_dim: 200
+  device: ${device}
+  batch_size: 1024
+  lr: 0.01
+  tau: 0.01
+  gamma: 0.95
+
+  critic:
+    input_dim: ???
