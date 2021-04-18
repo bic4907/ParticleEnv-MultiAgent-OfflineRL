@@ -32,12 +32,12 @@ class DDPG(object):
         [agent.to(self.device) for agent in self.agents]
 
     def scale_noise(self, scale):
-        for a in self.agents:
-            a.scale_noise(scale)
+        for agent in self.agents:
+            agent.scale_noise(scale)
 
     def reset_noise(self):
-        for a in self.agents:
-            a.reset_noise()
+        for agent in self.agents:
+            agent.reset_noise()
 
     def act(self, observations, sample=False):
         observations = torch.Tensor(observations).to(self.device)
@@ -61,18 +61,13 @@ class DDPG(object):
 
             with torch.no_grad():
                 target_actions = agent.policy(next_obses[:, agent_i])
-
                 target_critic_in = torch.cat((next_obses[:, agent_i], target_actions), dim=1)
+                target_next_q = rewards[:, agent_i] + (1 - dones[:, agent_i]) * self.gamma * agent.target_critic(target_critic_in)
 
-                target_next_q = rewards[:, agent_i] + dones[:, agent_i] * self.gamma * agent.target_critic(target_critic_in)
+            critic_in = torch.cat((obses[:, agent_i], actions[:, agent_i]), dim=1)
+            main_q = agent.critic(critic_in)
 
-                print(agent.target_critic(target_next_q).shape)
-
-            critic_in = torch.cat((obses[:, agent_i], action[:, agent_i]), dim=1).view(self.batch_size, -1)
-            critic_value = agent.critic(critic_in)
-
-            critic_loss = self.mse_loss(critic_value, target_critic_value)
-            # TODO log critic loss
+            critic_loss = self.mse_loss(main_q, target_next_q)
 
             critic_loss.backward()
 
@@ -83,8 +78,7 @@ class DDPG(object):
             agent.policy_optimizer.zero_grad()
 
             action = agent.policy(obses[:, agent_i])
-
-            critic_in = torch.cat((obses, actions), dim=2).view(self.batch_size, -1)
+            critic_in = torch.cat((obses[:, agent_i], action), dim=1)
 
             actor_loss = -agent.critic(critic_in).mean()
             actor_loss += (action ** 2).mean() * 1e-3  # Action regularize
@@ -93,7 +87,7 @@ class DDPG(object):
             torch.nn.utils.clip_grad_norm_(self.agents[agent_i].policy.parameters(), 0.5)
             agent.policy_optimizer.step()
 
-            self.update_all_targets()
+        self.update_all_targets()
 
     def update_all_targets(self):
         for agent in self.agents:

@@ -62,3 +62,4 @@ Werkzeug==1.0.1
 wrapt==1.12.1
 zipp==3.4.1
 zmq==0.0.0
+imageio-ffmpeg

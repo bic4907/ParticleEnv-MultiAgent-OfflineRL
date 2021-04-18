@@ -4,7 +4,7 @@ import torch
 
 class ReplayBuffer(object):
 
-    def __init__(self, obs_shape, action_shape, reward_shape, capacity, device):
+    def __init__(self, obs_shape, action_shape, reward_shape, dones_shape, capacity, device):
         self.capacity = capacity
         self.device = device
 
@@ -12,7 +12,7 @@ class ReplayBuffer(object):
         self.next_obses = np.empty((capacity, *obs_shape), dtype=np.float32)
         self.actions = np.empty((capacity, *action_shape), dtype=np.float32)
         self.rewards = np.empty((capacity, *reward_shape), dtype=np.float32)
-        self.dones = np.empty((capacity, 1), dtype=np.float32)
+        self.dones = np.empty((capacity, *dones_shape), dtype=np.float32)
 
         self.idx = 0
         self.last_save = 0
@@ -40,7 +40,7 @@ class ReplayBuffer(object):
             actions = torch.FloatTensor(self.actions[idxs][:, nth]).to(self.device)
             rewards = torch.FloatTensor(self.rewards[idxs][:, nth]).to(self.device)
             next_obses = torch.FloatTensor(self.next_obses[idxs][:, nth]).to(self.device)
-            dones = torch.FloatTensor(self.dones[idxs]).to(self.device)
+            dones = torch.FloatTensor(self.dones[idxs][:, nth]).to(self.device)
         else:
             obses = torch.FloatTensor(self.obses[idxs]).to(self.device)
             actions = torch.FloatTensor(self.actions[idxs]).to(self.device)

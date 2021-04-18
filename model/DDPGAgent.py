@@ -50,21 +50,7 @@ class DDPGAgent(nn.Module):
 
         self.exploration = OUNoise(self.action_dim)
 
-    def reset_noise(self):
-        self.exploration.reset()
-
-    def scale_noise(self, scale):
-        self.exploration.scale = scale
-
     def act(self, obs, explore=False):
-        """
-        Take a step forward in environment for a minibatch of observations
-        Inputs:
-            obs (PyTorch Variable): Observations for this agent
-            explore (boolean): Whether or not to add exploration noise
-        Outputs:
-            action (PyTorch Variable): Actions for this agent
-        """
 
         if obs.dim() == 1:
             obs = obs.unsqueeze(dim=0)
@@ -74,7 +60,14 @@ class DDPGAgent(nn.Module):
         if explore:
             action += Tensor(self.exploration.noise()).to(self.device)
             action = action.clamp(-1, 1)
+
         return action.detach().cpu().numpy()
+
+    def reset_noise(self):
+        self.exploration.reset()
+
+    def scale_noise(self, scale):
+        self.exploration.scale = scale
 
     def get_params(self):
         return {'policy': self.policy.state_dict(),

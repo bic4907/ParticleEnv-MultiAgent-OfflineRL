@@ -40,6 +40,12 @@ class Workspace(object):
         self.agent_indexes = find_index(self.env_agent_types, 'ally')
         self.adversary_indexes = find_index(self.env_agent_types, 'adversary')
 
+        # OU Noise settings
+        self.num_seed_steps = cfg.num_seed_steps
+        self.ou_exploration_steps = cfg.ou_exploration_steps
+        self.ou_init_scale = cfg.ou_init_scale
+        self.ou_final_scale = cfg.ou_final_scale
+
         cfg.agent.params.obs_dim = self.env.observation_space[0].shape[0]
         cfg.agent.params.action_dim = self.env.action_space[0].shape[0]
         cfg.agent.params.action_range = [-1, 1]
@@ -53,9 +59,11 @@ class Workspace(object):
         obs_shape = [len(self.env_agent_types), cfg.agent.params.obs_dim]
         action_shape = [len(self.env_agent_types), cfg.agent.params.action_dim]
         reward_shape = [len(self.env_agent_types), 1]
+        dones_shape = [len(self.env_agent_types), 1]
         self.replay_buffer = ReplayBuffer(obs_shape=obs_shape,
                                           action_shape=action_shape,
                                           reward_shape=reward_shape,
+                                          dones_shape=dones_shape,
                                           capacity=int(cfg.replay_buffer_capacity),
                                           device=self.device)
 
@@ -112,30 +120,36 @@ class Workspace(object):
 
                 obs = self.env.reset()
 
+                ou_percentage = max(0, self.ou_exploration_steps - (self.step - self.num_seed_steps)) / self.ou_exploration_steps
+                self.agent.scale_noise(self.ou_final_scale + (self.ou_init_scale - self.ou_final_scale) * ou_percentage)
+                self.agent.reset_noise()
+
                 episode_reward = 0
                 episode_step = 0
                 episode += 1
 
                 self.logger.log('train/episode', episode, self.step)
 
-                if self.step < self.cfg.num_seed_steps:
-                    action = np.array([self.env.action_space[0].sample() for _ in self.env_agent_types])
+            if self.step < self.cfg.num_seed_steps:
+                action = np.array([self.env.action_space[0].sample() for _ in self.env_agent_types])
+            else:
+                agent_observation = obs[self.agent_indexes]
+                agent_actions = self.agent.act(agent_observation, sample=True)
 
-                else:
-                    agent_observation = obs[self.agent_indexes]
-                    agent_actions = self.agent.act(agent_observation, sample=True)
-                    print(agent_actions)
-
-                    adversary_observation = obs[self.adversary_indexes]
-                    # adversary_actions = self.agent.act(adversary_observation, sample=True)
-                    action = agent_actions
+                adversary_observation = obs[self.adversary_indexes]
+                # adversary_actions = self.agent.act(adversary_observation, sample=True)
+                action = agent_actions
 
             if self.step >= self.cfg.num_seed_steps and self.step >= self.agent.batch_size:
-
                 self.agent.update(self.replay_buffer, self.logger, self.step)
 
             next_obs, rewards, dones, _ = self.env.step(action)
 
+            if self.step > 6000:
+                import cv2
+                image = self.env.render()
+                cv2.imshow('iamge', image)
+                cv2.waitKey(1)
             done = True in dones
             if episode_step + 1 == self.env.episode_length:
                 done = True
@@ -145,7 +159,7 @@ class Workspace(object):
 
             episode_reward += rewards
 
-            self.replay_buffer.add(obs, action, rewards, next_obs, done)
+            self.replay_buffer.add(obs, action, rewards, next_obs, dones)
 
             obs = next_obs
             episode_step += 1
