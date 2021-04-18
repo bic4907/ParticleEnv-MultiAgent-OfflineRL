@@ -32,12 +32,12 @@ class MADDPG(object):
         [agent.to(self.device) for agent in self.agents]
 
     def scale_noise(self, scale):
-        for a in self.agents:
-            a.scale_noise(scale)
+        for agent in self.agents:
+            agent.scale_noise(scale)
 
     def reset_noise(self):
-        for a in self.agents:
-            a.reset_noise()
+        for agent in self.agents:
+            agent.reset_noise()
 
     def act(self, observations, sample=False):
         observations = torch.Tensor(observations).to(self.device)
@@ -57,50 +57,45 @@ class MADDPG(object):
         for agent_i, agent in enumerate(self.agents):
 
             ''' Update value '''
-            self.agents[agent_i].critic_optimizer.zero_grad()
+            agent.critic_optimizer.zero_grad()
 
             with torch.no_grad():
                 target_actions = torch.Tensor([policy(next_obs).detach().cpu().numpy() for policy, next_obs in zip(self.target_policies, torch.swapaxes(next_obses, 0, 1))]).to(self.device)
                 target_actions = torch.swapaxes(target_actions, 0, 1)
                 target_critic_in = torch.cat((next_obses, target_actions), dim=2).view(self.batch_size, -1)
 
-                target_critic_value = rewards[:, agent_i].view(self.batch_size, 1) + \
-                                      dones.view(self.batch_size, 1) * self.gamma * agent.target_critic(target_critic_in)
+                target_next_q = rewards[:, agent_i] + (1 - dones[:, agent_i]) * self.gamma * agent.target_critic(target_critic_in)
 
             critic_in = torch.cat((obses, actions), dim=2).view(self.batch_size, -1)
-            critic_value = self.agents[agent_i].critic(critic_in)
+            main_q = agent.critic(critic_in)
 
-            critic_loss = self.mse_loss(critic_value, target_critic_value)
-            # TODO log critic loss
-
+            critic_loss = self.mse_loss(main_q, target_next_q)
             critic_loss.backward()
-
-            torch.nn.utils.clip_grad_norm_(self.agents[agent_i].critic.parameters(), 0.5)
-            self.agents[agent_i].critic_optimizer.step()
+            torch.nn.utils.clip_grad_norm_(agent.critic.parameters(), 0.5)
+            agent.critic_optimizer.step()
 
             ''' Update policy '''
-            self.agents[agent_i].policy_optimizer.zero_grad()
+            agent.policy_optimizer.zero_grad()
 
-            action = self.agents[agent_i].policy(obses[:, agent_i])
+            action = agent.policy(obses[:, agent_i])
 
             joint_actions = torch.zeros((self.batch_size, self.num_agents, self.action_dim))
             for i, policy, local_obs in zip(range(self.num_agents), self.policies, torch.swapaxes(obses, 0, 1)):
                 if i == agent_i:
-                    joint_actions[:, i, :] = action
+                    joint_actions[:, i] = action
                 else:
                     with torch.no_grad():
-                        joint_actions[:, i, :] = policy(local_obs)
+                        joint_actions[:, i] = policy(local_obs)
 
-            critic_in = torch.cat((obses, actions), dim=2).view(self.batch_size, -1)
+            critic_in = torch.cat((obses, joint_actions), dim=2).view(self.batch_size, -1)
 
-            actor_loss = -self.agents[agent_i].critic(critic_in).mean()
+            actor_loss = -agent.critic(critic_in).mean()
             actor_loss += (action ** 2).mean() * 1e-3  # Action regularize
             actor_loss.backward()
+            torch.nn.utils.clip_grad_norm_(agent.policy.parameters(), 0.5)
+            agent.policy_optimizer.step()
 
-            torch.nn.utils.clip_grad_norm_(self.agents[agent_i].policy.parameters(), 0.5)
-            self.agents[agent_i].policy_optimizer.step()
-
-            self.update_all_targets()
+        self.update_all_targets()
 
     def update_all_targets(self):
         for agent in self.agents:

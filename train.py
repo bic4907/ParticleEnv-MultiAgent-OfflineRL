@@ -72,6 +72,7 @@ class Workspace(object):
 
     def evaluate(self):
         average_episode_reward = 0
+
         for episode in range(self.cfg.num_eval_episodes):
             obs = self.env.reset()
             episode_step = 0
@@ -120,8 +121,8 @@ class Workspace(object):
 
                 obs = self.env.reset()
 
-                ou_percentage = max(0, self.ou_exploration_steps - (self.step - self.num_seed_steps)) / self.ou_exploration_steps
-                self.agent.scale_noise(self.ou_final_scale + (self.ou_init_scale - self.ou_final_scale) * ou_percentage)
+                self.ou_percentage = max(0, self.ou_exploration_steps - (self.step - self.num_seed_steps)) / self.ou_exploration_steps
+                self.agent.scale_noise(self.ou_final_scale + (self.ou_init_scale - self.ou_final_scale) * self.ou_percentage)
                 self.agent.reset_noise()
 
                 episode_reward = 0
