@@ -82,7 +82,7 @@ class Workspace(object):
             while not done:
                 action = self.agent.act(obs, sample=False)
 
-                _, rewards, dones, _ = self.env.step(action)
+                obs, rewards, dones, _ = self.env.step(action)
 
                 done = True in dones
                 if episode_step == self.env.episode_length:
