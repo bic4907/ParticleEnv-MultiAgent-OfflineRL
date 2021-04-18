@@ -11,8 +11,8 @@ num_seed_steps: 5000
 num_train_steps: 1e6
 replay_buffer_capacity: ${num_train_steps}
 
-eval_frequency: 5000
-num_eval_episodes: 10
+eval_frequency: 2000
+num_eval_episodes: 5
 
 common_reward: true
 
@@ -31,4 +31,4 @@ save_video: true
 # hydra configuration
 hydra:
     run:
-        dir: ./experiment/${now:%Y.%m.%d}/${now:%H%M}_${agent.name}_${experiment}
+        dir: ./experiment/${now:%Y.%m.%d}/${now:%H%M}_${env}_${agent.name}_${experiment}

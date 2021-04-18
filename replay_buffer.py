@@ -14,6 +14,7 @@ class ReplayBuffer(object):
         self.rewards = np.empty((capacity, *reward_shape), dtype=np.float32)
         self.dones = np.empty((capacity, *dones_shape), dtype=np.float32)
 
+
         self.idx = 0
         self.last_save = 0
         self.full = False
@@ -21,13 +22,13 @@ class ReplayBuffer(object):
     def __len__(self):
         return self.capacity if self.full else self.idx
 
-    def add(self, obs, action, reward, next_obs, done):
+    def add(self, obs, action, reward, next_obs, dones):
 
         np.copyto(self.obses[self.idx], obs)
         np.copyto(self.actions[self.idx], action)
         np.copyto(self.rewards[self.idx], reward)
         np.copyto(self.next_obses[self.idx], next_obs)
-        np.copyto(self.dones[self.idx], done)
+        np.copyto(self.dones[self.idx], dones)
 
         self.idx = (self.idx + 1) % self.capacity
         self.full = self.full or self.idx == 0

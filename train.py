@@ -89,7 +89,7 @@ class Workspace(object):
                     done = True
 
                 self.video_recorder.record(self.env)
-                episode_reward += sum(rewards)
+                episode_reward += sum(rewards)[0]
 
                 episode_step += 1
 
@@ -145,19 +145,16 @@ class Workspace(object):
 
             next_obs, rewards, dones, _ = self.env.step(action)
 
-            if self.step > 6000:
-                import cv2
-                image = self.env.render()
-                cv2.imshow('iamge', image)
-                cv2.waitKey(1)
             done = True in dones
             if episode_step + 1 == self.env.episode_length:
                 done = True
 
+            reward = sum(rewards)[0]
             if self.common_reward:
-                rewards = sum(rewards)
+                avg_reward = sum(rewards)[0] / len(self.agent_indexes)
+                rewards = np.array([avg_reward for _ in self.agent_indexes]).reshape(-1, 1)
 
-            episode_reward += rewards
+            episode_reward += reward
 
             self.replay_buffer.add(obs, action, rewards, next_obs, dones)
 
