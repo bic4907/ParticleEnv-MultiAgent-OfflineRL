@@ -70,21 +70,15 @@ class Scenario(BaseScenario):
         return True if dist < dist_min else False
 
     def reward(self, agent, world):
-
-        reward = -0.001
-
-        dist = np.sqrt(np.sum(np.square(agent.state.p_pos - world.landmarks[0].state.p_pos)))
-        reward += -dist
-
-        if dist < 0.05:
-            reward += 1
-
+        rew = 0
+        for l in world.landmarks:
+            dists = [np.sqrt(np.sum(np.square(a.state.p_pos - l.state.p_pos))) for a in world.agents]
+            rew -= min(dists)
         if agent.collide:
             for a in world.agents:
                 if self.is_collision(a, agent):
-                    reward -= 0.1
-
-        return reward
+                    rew -= 1
+        return rew
 
     def observation(self, agent, world):
         # get positions of all entities in this agent's reference frame

@@ -11,7 +11,7 @@ num_seed_steps: 5000
 num_train_steps: 1e5
 replay_buffer_capacity: ${num_train_steps}
 
-eval_frequency: 2000
+eval_frequency: 5000
 num_eval_episodes: 5
 
 common_reward: true

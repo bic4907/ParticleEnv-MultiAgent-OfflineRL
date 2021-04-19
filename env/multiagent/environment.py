@@ -4,7 +4,8 @@ from gym.envs.registration import EnvSpec
 import numpy as np
 from env.multiagent.multi_discrete import MultiDiscrete
 
-# environment for all agents in the multiagent world
+
+# environment for all agents in the multi-agent world
 # currently code assumes that no agents will be created/destroyed at runtime!
 class MultiAgentEnv(gym.Env):
     metadata = {
@@ -13,7 +14,7 @@ class MultiAgentEnv(gym.Env):
 
     def __init__(self, world, reset_callback=None, reward_callback=None,
                  observation_callback=None, info_callback=None,
-                 done_callback=None, shared_viewer=True, episode_length=200):
+                 done_callback=None, shared_viewer=True, episode_length=100):
 
         self.episode_length = episode_length
         self.world = world
