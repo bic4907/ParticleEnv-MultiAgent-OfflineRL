@@ -4,7 +4,7 @@ from torch.optim import Adam
 import torch.nn as nn
 
 from model.network import MLPNetwork
-from model.utils.model import hard_update, fanin_init
+from model.utils.model import *
 from model.utils.noise import OUNoise
 
 
@@ -29,17 +29,20 @@ class DDPGAgent(nn.Module):
         self.obs_dim = params.obs_dim
         self.action_dim = params.action_dim
         self.device = params.device
+        self.discrete_action = params.discrete_action_space
         self.hidden_dim = params.hidden_dim
+
+        constrain_out = not self.discrete_action
 
         self.policy = MLPNetwork(self.obs_dim, self.action_dim,
                                  hidden_dim=self.hidden_dim,
-                                 constrain_out=True)
+                                 constrain_out=constrain_out)
         self.critic = MLPNetwork(params.critic.obs_dim, 1,
                                  hidden_dim=self.hidden_dim,
                                  constrain_out=False)
         self.target_policy = MLPNetwork(self.obs_dim, self.action_dim,
                                         hidden_dim=self.hidden_dim,
-                                        constrain_out=True)
+                                        constrain_out=constrain_out)
         self.target_critic = MLPNetwork(params.critic.obs_dim, 1,
                                         hidden_dim=self.hidden_dim,
                                         constrain_out=False)
@@ -51,6 +54,7 @@ class DDPGAgent(nn.Module):
 
         self.exploration = OUNoise(self.action_dim)
 
+
     def act(self, obs, explore=False):
 
         if obs.dim() == 1:
@@ -58,8 +62,16 @@ class DDPGAgent(nn.Module):
 
         action = self.policy(obs)
 
-        if explore:
-            action += Tensor(self.exploration.noise()).to(self.device)
+        if self.discrete_action:
+            if explore:
+                action = gumbel_softmax(action, hard=True)
+            else:
+                action = onehot_from_logits(action)
+
+            action = onehot_to_number(action)
+        else:  # continuous action
+            if explore:
+                action += Variable(Tensor(self.exploration.noise()), requires_grad=False)
             action = action.clamp(-1, 1)
 
         return action.detach().cpu().numpy()

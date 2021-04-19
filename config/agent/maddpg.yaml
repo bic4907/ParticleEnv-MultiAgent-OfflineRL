@@ -7,6 +7,7 @@ params:
   agent_index: ??? # Different by environments
   hidden_dim: 200
   device: ${device}
+  discrete_action_space: ${discrete_action_space}
   batch_size: 1024
   lr: 0.001
   tau: 0.001

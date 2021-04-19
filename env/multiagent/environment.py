@@ -1,6 +1,5 @@
 import gym
 from gym import spaces
-from gym.envs.registration import EnvSpec
 import numpy as np
 from env.multiagent.multi_discrete import MultiDiscrete
 
@@ -14,10 +13,11 @@ class MultiAgentEnv(gym.Env):
 
     def __init__(self, world, reset_callback=None, reward_callback=None,
                  observation_callback=None, info_callback=None,
-                 done_callback=None, shared_viewer=True, episode_length=100):
+                 done_callback=None, shared_viewer=True, discrete_action=False, episode_length=100):
 
         self.episode_length = episode_length
         self.world = world
+        self.world.discrete_action = discrete_action
         self.agents = self.world.policy_agents
         # set required vectorized gym env property
         self.n = len(world.policy_agents)
@@ -28,9 +28,9 @@ class MultiAgentEnv(gym.Env):
         self.info_callback = info_callback
         self.done_callback = done_callback
         # environment parameters
-        self.discrete_action_space = False
+        self.discrete_action_space = discrete_action
         # if true, action is a number 0...N, otherwise action is a one-hot N-dimensional vector
-        self.discrete_action_input = False
+        self.discrete_action_input = discrete_action
         # if true, even the action is continuous, action will be performed discretely
         self.force_discrete_action = world.discrete_action if hasattr(world, 'discrete_action') else False
         # if true, every agent has the same reward
@@ -40,6 +40,7 @@ class MultiAgentEnv(gym.Env):
         # configure spaces
         self.action_space = []
         self.observation_space = []
+
         for agent in self.agents:
             total_action_space = []
             # physical action space
@@ -68,7 +69,8 @@ class MultiAgentEnv(gym.Env):
                 self.action_space.append(total_action_space[0])
             # observation space
             obs_dim = len(observation_callback(agent, self.world))
-            self.observation_space.append(spaces.Box(low=-np.inf, high=+np.inf, shape=(obs_dim,), dtype=np.float32))
+
+            self.observation_space.append(spaces.Box(low=-np.inf, high=np.inf, shape=(obs_dim,), dtype=np.float32))
             agent.action.c = np.zeros(self.world.dim_c)
 
         # rendering
@@ -162,12 +164,12 @@ class MultiAgentEnv(gym.Env):
         if agent.movable:
             # physical action
             if self.discrete_action_input:
-                agent.action.u = np.zeros(self.world.dim_p)
+                agent.action.u = np.zeros((1, self.world.dim_p))
                 # process discrete action
-                if action[0] == 1: agent.action.u[0] = -1.0
-                if action[0] == 2: agent.action.u[0] = +1.0
-                if action[0] == 3: agent.action.u[1] = -1.0
-                if action[0] == 4: agent.action.u[1] = +1.0
+                if action[0] == 1: agent.action.u[0][0] = -1.0
+                if action[0] == 2: agent.action.u[0][0] = +1.0
+                if action[0] == 3: agent.action.u[0][1] = -1.0
+                if action[0] == 4: agent.action.u[0][1] = +1.0
             else:
                 if self.force_discrete_action:
                     d = np.argmax(action[0])

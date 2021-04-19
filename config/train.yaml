@@ -3,6 +3,7 @@ defaults:
 
 # Experiment Settings
 env: simple
+discrete_action_space: true
 
 experiment: vanilla
 seed: 0
@@ -20,7 +21,7 @@ ou_exploration_steps: 10000
 ou_init_scale: 0.3
 ou_final_scale: 0
 
-device: cuda
+device: cpu
 
 # Logging Settings
 log_frequency: 5000

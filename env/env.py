@@ -13,8 +13,6 @@ communication actions in this array. See environment.py for more details.
 """
 
 
-
-
 def make_env(scenario_name, benchmark=False):
     '''
     Creates a MultiAgentEnv object as env. This can be used similar to a gym

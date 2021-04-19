@@ -12,6 +12,7 @@ from utils.environment import get_agent_types
 
 from env.make_env import make_env
 from env.wrapper import NormalizedEnv
+from model.utils.model import *
 
 from utils.agent import find_index
 
@@ -33,7 +34,8 @@ class Workspace(object):
 
         set_seed_everywhere(cfg.seed)
         self.device = torch.device(cfg.device)
-        self.env = NormalizedEnv(make_env(cfg.env))
+        self.discrete_action = cfg.discrete_action_space
+        self.env = NormalizedEnv(make_env(cfg.env, discrete_action=self.discrete_action))
         self.env.reset()
 
         self.env_agent_types = get_agent_types(self.env)
@@ -46,9 +48,14 @@ class Workspace(object):
         self.ou_init_scale = cfg.ou_init_scale
         self.ou_final_scale = cfg.ou_final_scale
 
-        cfg.agent.params.obs_dim = self.env.observation_space[0].shape[0]
-        cfg.agent.params.action_dim = self.env.action_space[0].shape[0]
-        cfg.agent.params.action_range = [-1, 1]
+        if self.discrete_action:
+            cfg.agent.params.obs_dim = self.env.observation_space[0].shape[0]
+            cfg.agent.params.action_dim = self.env.action_space[0].n
+            cfg.agent.params.action_range = list(range(cfg.agent.params.action_dim))
+        else:
+            cfg.agent.params.obs_dim = self.env.observation_space[0].shape[0]
+            cfg.agent.params.action_dim = self.env.action_space[0].shape[0]
+            cfg.agent.params.action_range = [cfg.agent.params.action_dim.low, cfg.agent.params.action_dim.high]
 
         cfg.agent.params.agent_index = self.agent_indexes
         cfg.agent.params.critic.input_dim = cfg.agent.params.obs_dim + cfg.agent.params.action_dim
@@ -57,7 +64,7 @@ class Workspace(object):
 
         self.common_reward = cfg.common_reward
         obs_shape = [len(self.env_agent_types), cfg.agent.params.obs_dim]
-        action_shape = [len(self.env_agent_types), cfg.agent.params.action_dim]
+        action_shape = [len(self.env_agent_types), cfg.agent.params.action_dim if not self.discrete_action else 1]
         reward_shape = [len(self.env_agent_types), 1]
         dones_shape = [len(self.env_agent_types), 1]
         self.replay_buffer = ReplayBuffer(obs_shape=obs_shape,
@@ -82,7 +89,6 @@ class Workspace(object):
             episode_reward = 0
             while not done:
                 action = self.agent.act(obs, sample=False)
-
                 obs, rewards, dones, _ = self.env.step(action)
 
                 done = True in dones
@@ -133,6 +139,7 @@ class Workspace(object):
 
             if self.step < self.cfg.num_seed_steps:
                 action = np.array([self.env.action_space[0].sample() for _ in self.env_agent_types])
+                if self.discrete_action: action = action.reshape(-1, 1)
             else:
                 agent_observation = obs[self.agent_indexes]
                 agent_actions = self.agent.act(agent_observation, sample=True)
@@ -157,6 +164,7 @@ class Workspace(object):
 
             episode_reward += reward
 
+            if self.discrete_action: action = action.reshape(-1, 1)
             self.replay_buffer.add(obs, action, rewards, next_obs, dones)
 
             obs = next_obs
