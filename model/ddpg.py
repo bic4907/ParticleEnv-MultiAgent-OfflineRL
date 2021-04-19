@@ -68,9 +68,7 @@ class DDPG(object):
             main_q = agent.critic(critic_in)
 
             critic_loss = self.mse_loss(main_q, target_next_q)
-
             critic_loss.backward()
-
             torch.nn.utils.clip_grad_norm_(agent.critic.parameters(), 0.5)
             agent.critic_optimizer.step()
 
@@ -83,7 +81,6 @@ class DDPG(object):
             actor_loss = -agent.critic(critic_in).mean()
             actor_loss += (action ** 2).mean() * 1e-3  # Action regularize
             actor_loss.backward()
-
             torch.nn.utils.clip_grad_norm_(self.agents[agent_i].policy.parameters(), 0.5)
             agent.policy_optimizer.step()
 
