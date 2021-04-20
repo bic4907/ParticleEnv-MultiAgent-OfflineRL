@@ -62,7 +62,7 @@ def number_to_onehot(X):
     one_hot = np.zeros(shape)
     rows = np.arange(X.shape[0])
 
-    positions = X.reshape(-1).detach().numpy().astype(np.int)
+    positions = X.reshape(-1).cpu().detach().numpy().astype(np.int)
     one_hot[rows, positions] = 1.
 
     if is_batch:
@@ -108,7 +108,7 @@ def sample_gumbel(shape, eps=1e-20, tens_type=torch.FloatTensor):
 # modified for PyTorch from https://github.com/ericjang/gumbel-softmax/blob/master/Categorical%20VAE.ipynb
 def gumbel_softmax_sample(logits, temperature):
     """ Draw a sample from the Gumbel-Softmax distribution"""
-    y = logits + sample_gumbel(logits.shape, tens_type=type(logits.data))
+    y = logits + sample_gumbel(logits.shape, tens_type=type(logits.data)).to(logits.device)
     return F.softmax(y / temperature, dim=1)
 
 

@@ -10,7 +10,7 @@ class Scenario(BaseScenario):
         world.dim_c = 2
         num_agents = 3
         num_landmarks = 3
-        world.collaborative = True
+        world.collaborative = False
         # add agents
         world.agents = [Agent() for i in range(num_agents)]
         for i, agent in enumerate(world.agents):
@@ -71,13 +71,16 @@ class Scenario(BaseScenario):
 
     def reward(self, agent, world):
         rew = 0
+
         for l in world.landmarks:
             dists = [np.sqrt(np.sum(np.square(a.state.p_pos - l.state.p_pos))) for a in world.agents]
             rew -= min(dists)
+
         if agent.collide:
             for a in world.agents:
                 if self.is_collision(a, agent):
-                    rew -= 1
+                    rew -= 0.1
+        
         return rew
 
     def observation(self, agent, world):
@@ -96,4 +99,4 @@ class Scenario(BaseScenario):
             if other is agent: continue
             comm.append(other.state.c)
             other_pos.append(other.state.p_pos - agent.state.p_pos)
-        return np.concatenate([agent.state.p_vel] + [agent.state.p_pos] + entity_pos + other_pos + comm)
+        return np.concatenate([agent.state.p_vel] + [agent.state.p_pos] + entity_pos + other_pos)

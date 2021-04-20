@@ -13,7 +13,7 @@ class MultiAgentEnv(gym.Env):
 
     def __init__(self, world, reset_callback=None, reward_callback=None,
                  observation_callback=None, info_callback=None,
-                 done_callback=None, shared_viewer=True, discrete_action=False, episode_length=100):
+                 done_callback=None, shared_viewer=True, discrete_action=False, episode_length=25):
 
         self.episode_length = episode_length
         self.world = world
@@ -181,7 +181,11 @@ class MultiAgentEnv(gym.Env):
                 else:
                     agent.action.u = action[:2]
 
-            sensitivity = 5.0
+            if not self.discrete_action_input:
+                sensitivity = 5.0
+            else:
+                sensitivity = 5.0
+
             if agent.accel is not None:
                 sensitivity = agent.accel
             agent.action.u = np.array(agent.action.u) * sensitivity

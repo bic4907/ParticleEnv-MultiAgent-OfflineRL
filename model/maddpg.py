@@ -74,7 +74,6 @@ class MADDPG(object):
                 target_next_q = rewards[:, agent_i] + (1 - dones[:, agent_i]) * self.gamma * agent.target_critic(target_critic_in)
 
             critic_in = torch.cat((obses, actions), dim=2).view(self.batch_size, -1)
-
             main_q = agent.critic(critic_in)
 
             critic_loss = self.mse_loss(main_q, target_next_q)
@@ -92,13 +91,12 @@ class MADDPG(object):
                 action = policy_out
 
             joint_actions = torch.zeros((self.batch_size, self.num_agents, self.action_dim)).to(self.device)
-            for i, policy, local_obs in zip(range(self.num_agents), self.policies, torch.swapaxes(obses, 0, 1)):
+            for i, policy, local_obs, act in zip(range(self.num_agents), self.policies, torch.swapaxes(obses, 0, 1), torch.swapaxes(actions, 0, 1)):
                 if i == agent_i:
                     joint_actions[:, i] = action
                 else:
-                    with torch.no_grad():
-                        action = onehot_from_logits(policy(local_obs)) if self.discrete_action else policy(local_obs)
-                        joint_actions[:, i] = action
+                    other_action = onehot_from_logits(policy(local_obs)) if self.discrete_action else policy(local_obs)
+                    joint_actions[:, i] = other_action
 
             critic_in = torch.cat((obses, joint_actions), dim=2).view(self.batch_size, -1)
 

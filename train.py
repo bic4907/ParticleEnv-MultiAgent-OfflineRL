@@ -1,8 +1,4 @@
-import os
 import time
-
-import torch
-import numpy as np
 
 from recoder import VideoRecorder
 from logger import Logger
@@ -55,7 +51,7 @@ class Workspace(object):
         else:
             cfg.agent.params.obs_dim = self.env.observation_space[0].shape[0]
             cfg.agent.params.action_dim = self.env.action_space[0].shape[0]
-            cfg.agent.params.action_range = [cfg.agent.params.action_dim.low, cfg.agent.params.action_dim.high]
+            cfg.agent.params.action_range = [-1, 1]
 
         cfg.agent.params.agent_index = self.agent_indexes
         cfg.agent.params.critic.input_dim = cfg.agent.params.obs_dim + cfg.agent.params.action_dim
@@ -80,11 +76,11 @@ class Workspace(object):
     def evaluate(self):
         average_episode_reward = 0
 
+        self.video_recorder.init(enabled=True)
         for episode in range(self.cfg.num_eval_episodes):
             obs = self.env.reset()
             episode_step = 0
 
-            self.video_recorder.init(enabled=(episode == 0))
             done = False
             episode_reward = 0
             while not done:
@@ -101,7 +97,7 @@ class Workspace(object):
                 episode_step += 1
 
             average_episode_reward += episode_reward
-            self.video_recorder.save(f'{self.step}.mp4')
+        self.video_recorder.save(f'{self.step}.mp4')
 
         average_episode_reward /= self.cfg.num_eval_episodes
         self.logger.log('eval/episode_reward', average_episode_reward, self.step)
@@ -111,7 +107,7 @@ class Workspace(object):
 
         episode, episode_reward, done = 0, 0, True
         start_time = time.time()
-        while self.step < self.cfg.num_train_steps:
+        while self.step < self.cfg.num_train_steps + 1:
             if done or self.step % self.cfg.eval_frequency == 0:
                 if self.step > 0:
                     self.logger.log('train/duration', time.time() - start_time, self.step)

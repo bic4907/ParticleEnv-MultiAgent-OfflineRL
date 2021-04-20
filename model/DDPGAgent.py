@@ -49,7 +49,7 @@ class DDPGAgent(nn.Module):
 
         hard_update(self.target_policy, self.policy)
         hard_update(self.target_critic, self.critic)
-        self.policy_optimizer = Adam(self.policy.parameters(), lr=self.lr)
+        self.policy_optimizer = Adam(self.policy.parameters(), lr=self.lr * 0.1)
         self.critic_optimizer = Adam(self.critic.parameters(), lr=self.lr)
 
         self.exploration = OUNoise(self.action_dim)
@@ -71,7 +71,7 @@ class DDPGAgent(nn.Module):
             action = onehot_to_number(action)
         else:  # continuous action
             if explore:
-                action += Variable(Tensor(self.exploration.noise()), requires_grad=False)
+                action += Variable(Tensor(self.exploration.noise()), requires_grad=False).to(action.device)
             action = action.clamp(-1, 1)
 
         return action.detach().cpu().numpy()
