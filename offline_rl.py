@@ -111,7 +111,7 @@ class Workspace(object):
                 if self.step > 0:
                     self.logger.log('train/duration', time.time() - start_time, self.step)
                     start_time = time.time()
-                    self.logger.dump(self.step, save=(self.step > self.cfg.num_seed_steps))
+                    self.logger.dump(self.step, save=True)
 
                 if self.step > 0 and self.step % self.cfg.eval_frequency == 0:
                     self.logger.log('eval/episode', episode, self.step)
@@ -126,11 +126,10 @@ class Workspace(object):
 
                 self.logger.log('train/episode', episode, self.step)
 
-
             self.agent.update(self.replay_buffer, self.logger, self.step)
 
             episode_step += 1
-            self.step += self.agent.batch_size
+            self.step += 1
 
 
 @hydra.main(config_path='config', config_name='offline_rl')

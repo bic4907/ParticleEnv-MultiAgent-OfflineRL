@@ -37,8 +37,6 @@ class ReplayBuffer(object):
     def sample(self, batch_size, nth=None):
         idxs = np.random.randint(0, self.capacity if self.full else self.idx, size=batch_size)
 
-        print(self.obses.shape)
-
         if nth:
             obses = torch.FloatTensor(self.obses[idxs][:, nth]).to(self.device)
             actions = torch.FloatTensor(self.actions[idxs][:, nth]).to(self.device)
