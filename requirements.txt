@@ -17,6 +17,7 @@ glfw==2.1.0
 grpcio==1.32.0
 gym
 h5py==2.10.0
+mpi4py
 hydra-core @ git+git://github.com/facebookresearch/hydra@e381f5414c6b1b2bf60411786b5c8b24ec6f6d4b
 idna==2.10
 imageio==2.9.0

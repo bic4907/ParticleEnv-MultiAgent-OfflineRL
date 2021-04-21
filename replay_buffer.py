@@ -1,5 +1,8 @@
 import numpy as np
 import torch
+import json, os
+
+from utils.train import make_dir
 
 
 class ReplayBuffer(object):
@@ -14,9 +17,7 @@ class ReplayBuffer(object):
         self.rewards = np.empty((capacity, *reward_shape), dtype=np.float32)
         self.dones = np.empty((capacity, *dones_shape), dtype=np.float32)
 
-
         self.idx = 0
-        self.last_save = 0
         self.full = False
 
     def __len__(self):
@@ -50,3 +51,22 @@ class ReplayBuffer(object):
             dones = torch.FloatTensor(self.dones[idxs]).to(self.device)
 
         return obses, actions, rewards, next_obses, dones
+
+    def save(self, root_dir, step) -> None:
+        make_dir(root_dir, 'buffer') if root_dir else None
+        length = self.capacity if self.full else self.idx
+        path = os.path.join(root_dir, 'buffer')
+
+        np.save(os.path.join(path, 'state.npy'), self.obses)
+        np.save(os.path.join(path, 'next_state.npy'), self.next_obses)
+        np.save(os.path.join(path, 'action.npy'), self.actions)
+        np.save(os.path.join(path, 'reward.npy'), self.rewards)
+        np.save(os.path.join(path, 'done.npy'), self.dones)
+
+        info = dict()
+        info['idx'] = self.idx
+        info['capacity'] = self.capacity
+        info['step'] = step
+        info['size'] = length
+        json.dumps('info.txt', indent=4, sort_keys=True)
+

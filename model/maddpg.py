@@ -4,6 +4,7 @@ import numpy as np
 from utils.misc import soft_update
 
 from model.DDPGAgent import DDPGAgent
+from model.utils.model import *
 
 
 class MADDPG(object):
@@ -19,6 +20,7 @@ class MADDPG(object):
         self.action_dim = params.action_dim
         self.batch_size = params.batch_size
         self.device = params.device
+        self.discrete_action = params.discrete_action_space
 
         self.agent_index = params.agent_index
         self.num_agents = len(self.agent_index)
@@ -54,17 +56,23 @@ class MADDPG(object):
         sample = replay_buffer.sample(self.batch_size, nth=self.agent_index)
         obses, actions, rewards, next_obses, dones = sample
 
+        if self.discrete_action:  actions = number_to_onehot(actions)
+
         for agent_i, agent in enumerate(self.agents):
 
             ''' Update value '''
             agent.critic_optimizer.zero_grad()
 
             with torch.no_grad():
-                target_actions = torch.Tensor([policy(next_obs).detach().cpu().numpy() for policy, next_obs in zip(self.target_policies, torch.swapaxes(next_obses, 0, 1))]).to(self.device)
+                if self.discrete_action:
+                    target_actions = torch.Tensor([onehot_from_logits(policy(next_obs)).detach().cpu().numpy() for policy, next_obs in
+                                               zip(self.target_policies, torch.swapaxes(next_obses, 0, 1))]).to(self.device)
+                else:
+                    target_actions = torch.Tensor([policy(next_obs).detach().cpu().numpy() for policy, next_obs in
+                                                   zip(self.target_policies, torch.swapaxes(next_obses, 0, 1))]).to(self.device)
                 target_actions = torch.swapaxes(target_actions, 0, 1)
                 target_critic_in = torch.cat((next_obses, target_actions), dim=2).view(self.batch_size, -1)
                 target_next_q = rewards[:, agent_i] + (1 - dones[:, agent_i]) * self.gamma * agent.target_critic(target_critic_in)
-
 
             critic_in = torch.cat((obses, actions), dim=2).view(self.batch_size, -1)
             main_q = agent.critic(critic_in)
@@ -77,20 +85,24 @@ class MADDPG(object):
             ''' Update policy '''
             agent.policy_optimizer.zero_grad()
 
-            action = agent.policy(obses[:, agent_i])
+            policy_out = agent.policy(obses[:, agent_i])
+            if self.discrete_action:
+                action = gumbel_softmax(policy_out, hard=True)
+            else:
+                action = policy_out
 
             joint_actions = torch.zeros((self.batch_size, self.num_agents, self.action_dim)).to(self.device)
-            for i, policy, local_obs in zip(range(self.num_agents), self.policies, torch.swapaxes(obses, 0, 1)):
+            for i, policy, local_obs, act in zip(range(self.num_agents), self.policies, torch.swapaxes(obses, 0, 1), torch.swapaxes(actions, 0, 1)):
                 if i == agent_i:
                     joint_actions[:, i] = action
                 else:
-                    with torch.no_grad():
-                        joint_actions[:, i] = policy(local_obs)
+                    other_action = onehot_from_logits(policy(local_obs)) if self.discrete_action else policy(local_obs)
+                    joint_actions[:, i] = other_action
 
             critic_in = torch.cat((obses, joint_actions), dim=2).view(self.batch_size, -1)
 
             actor_loss = -agent.critic(critic_in).mean()
-            actor_loss += (action ** 2).mean() * 1e-3  # Action regularize
+            actor_loss += (policy_out ** 2).mean() * 1e-3  # Action regularize
             actor_loss.backward()
             torch.nn.utils.clip_grad_norm_(agent.policy.parameters(), 0.5)
             agent.policy_optimizer.step()
@@ -102,12 +114,20 @@ class MADDPG(object):
             soft_update(agent.target_critic, agent.critic, self.tau)
             soft_update(agent.target_policy, agent.policy, self.tau)
 
-    def save(self, filename):
-        raise NotImplementedError
+    def save(self, step):
+        # os.mk
+        #
+        # for i, agent in self.agents:
+        #     name = '{0}_{1}_{step}.pth'.format(self.name, i, step)
+        #     torch.save(agent, )
+        #
+        #
+        # raise NotImplementedError
+        pass
 
     def load(self, filename):
-        raise NotImplementedError
 
+        raise NotImplementedError
 
     @property
     def policies(self):
@@ -124,15 +144,3 @@ class MADDPG(object):
     @property
     def target_critics(self):
         return [agent.target_critic for agent in self.agents]
-
-    '''
-    @classmethod
-    def init_from_save(cls, filename):
-
-        save_dict = torch.load(filename)
-        instance = cls(**save_dict['init_dict'])
-        instance.init_dict = save_dict['init_dict']
-        for a, params in zip(instance.agents, save_dict['agent_params']):
-            a.load_params(params)
-        return instance
-    '''

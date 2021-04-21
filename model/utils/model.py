@@ -50,6 +50,37 @@ def init_processes(rank, size, fn, backend='gloo'):
     fn(rank, size)
 
 
+def number_to_onehot(X):
+    is_batch = X.dim() == 3
+    is_torch = type(X) == torch.Tensor
+
+    if is_batch:
+        num_agents = X.shape[1]
+        X = X.reshape(-1, 1)
+
+    shape = (X.shape[0], int(X.max() + 1))
+    one_hot = np.zeros(shape)
+    rows = np.arange(X.shape[0])
+
+    positions = X.reshape(-1).cpu().detach().numpy().astype(np.int)
+    one_hot[rows, positions] = 1.
+
+    if is_batch:
+        one_hot = one_hot.reshape(-1, num_agents, int(X.max() + 1))
+
+    if is_torch:
+        one_hot = torch.Tensor(one_hot).to(X.device)
+
+    return one_hot
+
+
+def onehot_to_number(X):
+    if type(X) == torch.Tensor:
+        return torch.argmax(X, dim=1)
+    else:
+        return np.argmax(X, axis=1)
+
+
 def onehot_from_logits(logits, eps=0.0):
     """
     Given batch of logits, return one-hot sample using epsilon greedy strategy
@@ -77,7 +108,7 @@ def sample_gumbel(shape, eps=1e-20, tens_type=torch.FloatTensor):
 # modified for PyTorch from https://github.com/ericjang/gumbel-softmax/blob/master/Categorical%20VAE.ipynb
 def gumbel_softmax_sample(logits, temperature):
     """ Draw a sample from the Gumbel-Softmax distribution"""
-    y = logits + sample_gumbel(logits.shape, tens_type=type(logits.data))
+    y = logits + sample_gumbel(logits.shape, tens_type=type(logits.data)).to(logits.device)
     return F.softmax(y / temperature, dim=1)
 
 
