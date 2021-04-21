@@ -170,7 +170,7 @@ class Workspace(object):
             self.step += 1
 
         if self.save_replay_buffer:
-            self.replay_buffer.save(self.work_dir, self.step)
+            self.replay_buffer.save(self.work_dir, self.step - 1)
 
 
 @hydra.main(config_path='config', config_name='train')
