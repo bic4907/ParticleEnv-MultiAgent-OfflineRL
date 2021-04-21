@@ -37,6 +37,8 @@ class ReplayBuffer(object):
     def sample(self, batch_size, nth=None):
         idxs = np.random.randint(0, self.capacity if self.full else self.idx, size=batch_size)
 
+        print(self.obses.shape)
+
         if nth:
             obses = torch.FloatTensor(self.obses[idxs][:, nth]).to(self.device)
             actions = torch.FloatTensor(self.actions[idxs][:, nth]).to(self.device)
@@ -76,14 +78,14 @@ class ReplayBuffer(object):
     def load(self, root_dir) -> None:
         path = os.path.join(root_dir, 'buffer')
 
-        self.obses = np.load(os.path.join(path, 'state.npz'))
-        self.next_obses = np.load(os.path.join(path, 'next_state.npz'))
-        self.actions = np.load(os.path.join(path, 'action.npz'))
-        self.rewards = np.load(os.path.join(path, 'reward.npz'))
-        self.dones = np.load(os.path.join(path, 'done.npz'))
+        self.obses = np.load(os.path.join(path, 'state.npz'))['arr_0']
+        self.next_obses = np.load(os.path.join(path, 'next_state.npz'))['arr_0']
+        self.actions = np.load(os.path.join(path, 'action.npz'))['arr_0']
+        self.rewards = np.load(os.path.join(path, 'reward.npz'))['arr_0']
+        self.dones = np.load(os.path.join(path, 'done.npz'))['arr_0']
 
         with open(os.path.join(path, 'info.txt'), 'r') as f:
-            info = json.loads(f)
+            info = json.load(f)
 
         self.idx = int(info['idx'])
         self.capacity = int(info['capacity'])
