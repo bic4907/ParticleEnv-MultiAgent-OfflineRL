@@ -9,8 +9,8 @@ experiment: vanilla
 seed: 0
 num_seed_steps: 5000
 
-num_train_steps: 2e6
-replay_buffer_capacity: 500000
+num_train_steps: 1e6
+replay_buffer_capacity: 1e6
 
 eval_frequency: 5000
 num_eval_episodes: 5
@@ -21,7 +21,7 @@ ou_exploration_steps: ${num_train_steps}
 ou_init_scale: 0.3
 ou_final_scale: 0
 
-device: cpu
+device: cuda
 
 # Logging Settings
 log_frequency: 5000
@@ -29,8 +29,8 @@ log_save_tb: true
 save_video: true
 
 # Save Buffer
-
-
+save_model: false
+save_replay_buffer: false
 
 # hydra configuration
 hydra:

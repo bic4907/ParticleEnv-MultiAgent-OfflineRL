@@ -31,6 +31,7 @@ class Workspace(object):
         set_seed_everywhere(cfg.seed)
         self.device = torch.device(cfg.device)
         self.discrete_action = cfg.discrete_action_space
+        self.save_replay_buffer = cfg.save_replay_buffer
         self.env = NormalizedEnv(make_env(cfg.env, discrete_action=self.discrete_action))
         self.env.reset()
 
@@ -69,6 +70,7 @@ class Workspace(object):
                                           dones_shape=dones_shape,
                                           capacity=int(cfg.replay_buffer_capacity),
                                           device=self.device)
+
 
         self.video_recorder = VideoRecorder(self.work_dir if cfg.save_video else None)
         self.step = 0
@@ -166,6 +168,9 @@ class Workspace(object):
             obs = next_obs
             episode_step += 1
             self.step += 1
+
+        if self.save_replay_buffer:
+            self.replay_buffer.save(self.work_dir, self.step)
 
 
 @hydra.main(config_path='config', config_name='train')

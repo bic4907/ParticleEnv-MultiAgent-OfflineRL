@@ -6,6 +6,7 @@ from utils.misc import soft_update
 from model.DDPGAgent import DDPGAgent
 from model.utils.model import *
 
+
 class MADDPG(object):
 
     def __init__(self, name, params):
@@ -113,12 +114,20 @@ class MADDPG(object):
             soft_update(agent.target_critic, agent.critic, self.tau)
             soft_update(agent.target_policy, agent.policy, self.tau)
 
-    def save(self, filename):
-        raise NotImplementedError
+    def save(self, step):
+        # os.mk
+        #
+        # for i, agent in self.agents:
+        #     name = '{0}_{1}_{step}.pth'.format(self.name, i, step)
+        #     torch.save(agent, )
+        #
+        #
+        # raise NotImplementedError
+        pass
 
     def load(self, filename):
-        raise NotImplementedError
 
+        raise NotImplementedError
 
     @property
     def policies(self):
@@ -135,15 +144,3 @@ class MADDPG(object):
     @property
     def target_critics(self):
         return [agent.target_critic for agent in self.agents]
-
-    '''
-    @classmethod
-    def init_from_save(cls, filename):
-
-        save_dict = torch.load(filename)
-        instance = cls(**save_dict['init_dict'])
-        instance.init_dict = save_dict['init_dict']
-        for a, params in zip(instance.agents, save_dict['agent_params']):
-            a.load_params(params)
-        return instance
-    '''
