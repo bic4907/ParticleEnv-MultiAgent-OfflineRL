@@ -57,16 +57,35 @@ class ReplayBuffer(object):
         length = self.capacity if self.full else self.idx
         path = os.path.join(root_dir, 'buffer')
 
-        np.save(os.path.join(path, 'state.npy'), self.obses)
-        np.save(os.path.join(path, 'next_state.npy'), self.next_obses)
-        np.save(os.path.join(path, 'action.npy'), self.actions)
-        np.save(os.path.join(path, 'reward.npy'), self.rewards)
-        np.save(os.path.join(path, 'done.npy'), self.dones)
+        np.savez_compressed(os.path.join(path, 'state.npz'), self.obses)
+        np.savez_compressed(os.path.join(path, 'next_state.npz'), self.next_obses)
+        np.savez_compressed(os.path.join(path, 'action.npz'), self.actions)
+        np.savez_compressed(os.path.join(path, 'reward.npz'), self.rewards)
+        np.savez_compressed(os.path.join(path, 'done.npz'), self.dones)
 
         info = dict()
         info['idx'] = self.idx
         info['capacity'] = self.capacity
         info['step'] = step
         info['size'] = length
-        json.dumps('info.txt', indent=4, sort_keys=True)
+
+        with open(os.path.join(path, 'info.txt'), 'w') as f:
+            output = json.dumps(info, indent=4, sort_keys=True)
+            f.write(output)
+
+    def load(self, root_dir) -> None:
+        path = os.path.join(root_dir, 'buffer')
+
+        self.obses = np.load(os.path.join(path, 'state.npz'))
+        self.next_obses = np.load(os.path.join(path, 'next_state.npz'))
+        self.actions = np.load(os.path.join(path, 'action.npz'))
+        self.rewards = np.load(os.path.join(path, 'reward.npz'))
+        self.dones = np.load(os.path.join(path, 'done.npz'))
+
+        with open(os.path.join(path, 'info.txt'), 'r') as f:
+            info = json.loads(f)
+
+        self.idx = int(info['idx'])
+        self.capacity = int(info['capacity'])
+        self.full = int(info['step']) >= self.capacity
 
