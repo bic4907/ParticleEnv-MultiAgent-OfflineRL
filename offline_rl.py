@@ -62,7 +62,7 @@ class Workspace(object):
                                           action_shape=action_shape,
                                           reward_shape=reward_shape,
                                           dones_shape=dones_shape,
-                                          capacity=int(cfg.replay_buffer_capacity),
+                                          capacity=0,
                                           device=self.device)
 
         self.target_workspace = cfg.target_workspace
@@ -70,6 +70,7 @@ class Workspace(object):
 
         self.video_recorder = VideoRecorder(self.work_dir if cfg.save_video else None)
         self.step = 0
+        self.estimated_step = 0
 
     def evaluate(self):
         average_episode_reward = 0
@@ -95,11 +96,11 @@ class Workspace(object):
                 episode_step += 1
 
             average_episode_reward += episode_reward
-        self.video_recorder.save(f'{self.step}.mp4')
+        self.video_recorder.save(f'{self.estimated_step}.mp4')
 
         average_episode_reward /= self.cfg.num_eval_episodes
-        self.logger.log('eval/episode_reward', average_episode_reward, self.step)
-        self.logger.dump(self.step)
+        self.logger.log('eval/episode_reward', average_episode_reward, self.estimated_step)
+        self.logger.dump(self.estimated_step)
 
     def run(self):
 
@@ -109,27 +110,28 @@ class Workspace(object):
             if done or self.step % self.cfg.eval_frequency == 0:
 
                 if self.step > 0:
-                    self.logger.log('train/duration', time.time() - start_time, self.step)
+                    self.logger.log('train/duration', time.time() - start_time, self.estimated_step)
                     start_time = time.time()
-                    self.logger.dump(self.step, save=True)
+                    self.logger.dump(self.estimated_step, save=True)
 
                 if self.step > 0 and self.step % self.cfg.eval_frequency == 0:
-                    self.logger.log('eval/episode', episode, self.step)
+                    self.logger.log('eval/episode', episode, self.estimated_step)
                     self.evaluate()
                     start_time = time.time()
 
-                self.logger.log('train/episode_reward', episode_reward, self.step)
+                self.logger.log('train/episode_reward', episode_reward, self.estimated_step)
 
                 episode_reward = 0
                 episode_step = 0
                 episode += 1
 
-                self.logger.log('train/episode', episode, self.step)
+                self.logger.log('train/episode', episode, self.estimated_step)
 
-            self.agent.update(self.replay_buffer, self.logger, self.step)
+            self.agent.update(self.replay_buffer, self.logger, self.estimated_step)
 
             episode_step += 1
             self.step += 1
+            self.estimated_step = self.step * self.agent.batch_size
 
 
 @hydra.main(config_path='config', config_name='offline_rl')

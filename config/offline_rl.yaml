@@ -1,5 +1,5 @@
 defaults:
-    - agent: maddpg
+    - agent: ddpg
 
 # Offline RL Settings
 target_workspace: ???
@@ -11,10 +11,9 @@ discrete_action_space: true
 experiment: vanilla
 seed: 0
 
-num_train_steps: 1e5
-replay_buffer_capacity: ${num_train_steps}
+num_train_steps: 40000
 
-eval_frequency: 10
+eval_frequency: 1000
 num_eval_episodes: 5
 
 common_reward: true
